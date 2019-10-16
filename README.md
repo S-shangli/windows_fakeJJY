@@ -47,4 +47,30 @@ Waiting:        clock 00sec     done(19h49m00s)
 
 ## Known limitations
 + not support JJY call sign
++ not support LS1,2 bit (leap second)
++ not support SU1,2 bit (reserved bit)
 + rough synchronise with windows date (using Sleep WinAPI)
+
+## How it working
++ Send data via Serial Port
++ Send 0x55 data
++ Using 80000 baudrate, StopBit 1, Non-Parity
+
+---> Tx line output the 40kHz JJY carrier wave
+
+```
+    start  LSB                               MSB  stop
+      bit  d1   d2   d3   d4   d5   d6   d7   d8   bit
+****+    +----+    +----+    +----+    +----+    +----+****
+****|    |    |    |    |    |    |    |    |    |    |****
+****+----+    +----+    +----+    +----+    +----+    +****
+    <====>      1tick   = 12.5us @ 80000baud
+    <=========> 2tick   = 1cycle = 25us = 40kHz
+```
+
++ JJY modulation
+  + data0 : 0.8s carrier wave + 0.2s blank
+  + data1 : 0.5s carrier wave + 0.5s blank
+  + Marker: 0.2s carrier wave + 0.8s blank
+  + note: in strictly, blank is not blank that is carrier with 10% power, but not supported :)
+  
