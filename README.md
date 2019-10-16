@@ -19,7 +19,8 @@ $ ./fakeJJY.exe
    ex.: fakeJJY.exe COM3      80000
 ```
  
-``` $ ./fakeJJY.exe  COM3 80000
+```
+$ ./fakeJJY.exe  COM3 80000
 Opening:        COM3            done
 Setting:        80000N81        done
 Waiting:        clock 00sec     done(19h47m00s)
