@@ -1,6 +1,13 @@
 # fakeJJY
 fake JJY generator via Serial Port
 
+## References
+* JJY format
+  * http://jjy.nict.go.jp/jjy/trans/index.html
+  * http://jjy.nict.go.jp/jjy/trans/timecode1.html
+* Windows API
+  * http://wisdom.sakura.ne.jp/system/winapi/win32/index.html
+
 ## Environment
 + Windows OS
 + MSYS + gcc
