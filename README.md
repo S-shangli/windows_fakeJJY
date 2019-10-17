@@ -20,14 +20,15 @@ $ gcc ./main.c -o fakeJJY
 ## Usage
 ```
 $ ./fakeJJY.exe
- Error: invalid args
- 
- Usage: fakeJJY.exe <COMPORT> <BAUDRATE>
-   ex.: fakeJJY.exe COM3      80000
+Error: invalid args
+
+Usage: fakeJJY.exe <COMPORT> [BAUDRATE]
+  ex.: fakeJJY.exe COM3
+  ex.: fakeJJY.exe COM3      80001
 ```
  
 ```
-$ ./fakeJJY.exe  COM3 80000
+$ ./fakeJJY.exe  COM3
 Opening:        COM3            done
 Setting:        80000N81        done
 Waiting:        clock 00sec     done(19h47m00s)
