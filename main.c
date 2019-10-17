@@ -8,13 +8,14 @@
 #define LEN_LONG  256
 #define LEN_MID   64
 #define LEN_SHORT 32
+#define TARGET_BAUDRATE 80000
 
 
 /* subroutines */
 void	print_usage( char* COMMAND_NAME ); // error message
-void	check_args(int , char**, char* , char*, unsigned int*);
+void	check_args(int , char**, char* , char*, unsigned long*);
 void	abort_handler(int);
-HANDLE	open_comport(unsigned char* COMPORT_NAME ,unsigned int COMPORT_BAUD );
+HANDLE	open_comport(unsigned char* COMPORT_NAME ,unsigned long COMPORT_BAUD );
 void	send_1ms();
 void	send_200ms();
 void	send_500ms();
@@ -33,7 +34,7 @@ HANDLE	COMPORT_h;
 int main( int argc, char *argv[] ){
 	unsigned char COMMAND_NAME[LEN_LONG]={ '\0' };
 	unsigned char COMPORT_NAME[LEN_MID];
-	unsigned int  COMPORT_BAUD=0;
+	unsigned long  COMPORT_BAUD=0;
 	unsigned char TIMECODE_str[LEN_MID] = { '\0' };
 	unsigned char TIME_str[LEN_SHORT]   = { '\0' };
 	
@@ -279,7 +280,7 @@ void abort_handler(int sig){
 
 
 
-void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME, unsigned int *COMPORT_BAUD){
+void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME, unsigned long *COMPORT_BAUD){
 	unsigned int i = 0;
 	unsigned int j = 0;
 	
@@ -295,7 +296,7 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 	
 	
 	/* check arg num */
-	if( argc != 3 ){
+	if( argc != 3 && argc != 2 ){
 		printf("Error: invalid args\n");
 		print_usage(COMMAND_NAME);
 		exit(1);
@@ -305,6 +306,7 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 	
 	/* check arg format COMPORT */
 	j=0;i=3;
+	if( argv[1][3] == '\0' ){ j=1; }
 	while( '\0' != argv[1][i] ){
 		if( 0x30 > argv[1][i] || 0x39 < argv[1][i] ){ j=1; }
 		i++;
@@ -317,30 +319,37 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 		print_usage(COMMAND_NAME);
 		exit(1);
 	}
-	strcpy(COMPORT_NAME,argv[1]);
+	strncpy(COMPORT_NAME,argv[1],LEN_MID-1);
 	
 	
 	
 	/* check arg format BAUDRATE */
-	j=0;i=0;
-	while( '\0' != argv[2][i] ){
-		if( 0x30 > argv[2][i] || 0x39 < argv[2][i] ){ j=1; }
-		i++;
+	if( argc == 2 ){
+		*COMPORT_BAUD=TARGET_BAUDRATE;	// default BAUDRATE
+	}else if( strlen(argv[2]) > 8){
+		*COMPORT_BAUD=TARGET_BAUDRATE;	// default BAUDRATE
+		printf("Warning:\tbaurate ignored, using %d\n",TARGET_BAUDRATE);
+	}else{
+		j=0;i=0;
+		while( '\0' != argv[2][i] ){
+			if( 0x30 > argv[2][i] || 0x39 < argv[2][i] ){ j=1; }
+			i++;
+		}
+		if( j          !=  0     ){
+			printf("Error: invalid args <BAUDRATE>=%s\n",argv[2]);
+			print_usage(COMMAND_NAME);
+			exit(1);
+		}
+		*COMPORT_BAUD=atol(argv[2]);	// custom BAUDRATE
 	}
-	if( j          !=  0     ){
-		printf("Error: invalid args <BAUDRATE>=%s\n",argv[2]);
-		print_usage(COMMAND_NAME);
-		exit(1);
-	}
-	*COMPORT_BAUD=atoi(argv[2]);
-	
 }
 
 
 void print_usage(char* COMMAND_NAME){
 	printf("\n");
-	printf("Usage: %s <COMPORT> <BAUDRATE>\n",COMMAND_NAME);
-	printf("  ex.: %s COM3      80000\n",COMMAND_NAME);
+	printf("Usage: %s <COMPORT> [BAUDRATE]\n",COMMAND_NAME);
+	printf("  ex.: %s COM3\n",COMMAND_NAME);
+	printf("  ex.: %s COM3      80001\n",COMMAND_NAME);
 }
 
 
@@ -381,7 +390,7 @@ void send_1ms(){
 }
 
 
-HANDLE open_comport(unsigned char* COMPORT_NAME ,unsigned int COMPORT_BAUD){
+HANDLE open_comport(unsigned char* COMPORT_NAME ,unsigned long COMPORT_BAUD){
 	HANDLE h;
 	DCB dcb;
 	unsigned char ST[LEN_SHORT]={ '\0' };
