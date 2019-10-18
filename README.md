@@ -10,7 +10,8 @@ fake JJY generator via Serial Port
 
 ## Environment
 + Windows OS
-+ MSYS + gcc
++ mingw32
++ gcc version 8.2.0 (MinGW.org GCC-8.2.0-3)
 
 ## Compile
 ```
@@ -20,11 +21,16 @@ $ gcc ./main.c -o fakeJJY
 ## Usage
 ```
 $ ./fakeJJY.exe
-Error: invalid args
+Error:  Can't assume <COMPORT> from "fakeJJY.exe"
 
-Usage: fakeJJY.exe <COMPORT> [BAUDRATE]
-  ex.: fakeJJY.exe COM3
-  ex.: fakeJJY.exe COM3      80001
+Usage:
+  fakeJJY.exe <COMPORT> [BAUDRATE]
+  <COMPORT> can specify in filename (COMPORT assume mode)
+
+Example:
+  fakeJJY.exe   COM3    80000  (full specified)
+  fakeJJY.exe   COM3           (use default BAUDRATE)
+  fakeJJY_COM3.exe             (COMPORT assume mode)
 ```
  
 ```
@@ -38,6 +44,17 @@ Waiting:        clock 00sec     done(19h48m00s)
 TIMECODE:       M10001000M000101001M001001000M100100100M000011001M011000000M
 Sending:        M10001000M000101001M001001000M100100100M000011001M011000000M
 Waiting:        clock 00sec     done(19h49m00s)
+```
+
+```
+$ cp fakeJJY.exe fakeJJY_COM3.exe
+
+$ fakeJJY_COM3.exe
+Opening:        COM3            done
+Setting:        80000N81        done
+Waiting:        clock 00sec     done(23h45m00s)
+TIMECODE:       M10000101M001000011M001001001M000100110M000011001M101000000M
+Sending:        M10000101M001000
 ```
 
 ## External Connection
