@@ -14,6 +14,7 @@
 /* subroutines */
 void	print_usage( char* COMMAND_NAME ); // error message
 void	check_args(int , char**, char* , char*, unsigned long*);
+void	assume_comport(char*, char*);
 void	abort_handler(int);
 HANDLE	open_comport(unsigned char* COMPORT_NAME ,unsigned long COMPORT_BAUD );
 void	send_1ms();
@@ -109,7 +110,7 @@ void send_TIMECODE(char *TIMECODE_str){
 				break;
 			
 			default :
-				printf("Error: invalid TIMECODE (%s)\n",TIMECODE_str);
+				printf("Error:\tinvalid TIMECODE (%s)\n",TIMECODE_str);
 				exit(1);
 				
 		}// end switch
@@ -273,7 +274,7 @@ void getTimecode(char *result, unsigned int DIFF_MINUTES){
 
 
 void abort_handler(int sig){
-	printf("\n\nSignal Interrupt: close COMPORT\n\n");
+	printf("\n\nSignal Interrupt:\tclose COMPORT\n\n");
 	CloseHandle(COMPORT_h);
 	exit(1);
 }
@@ -296,8 +297,12 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 	
 	
 	/* check arg num */
-	if( argc != 3 && argc != 2 ){
-		printf("Error: invalid args\n");
+	// argc==1 : COMPORT assume mode, and default BAUDRATE
+	// argc==2 : use default BAUDRATE
+	// argc==3 : full specified
+	// other   : arg error
+	if( argc != 3 && argc != 2 && argc != 1 ){
+		printf("Error:\tinvalid args\n");
 		print_usage(COMMAND_NAME);
 		exit(1);
 	}
@@ -305,51 +310,111 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 	
 	
 	/* check arg format COMPORT */
-	j=0;i=3;
-	if( argv[1][3] == '\0' ){ j=1; }
-	while( '\0' != argv[1][i] ){
-		if( 0x30 > argv[1][i] || 0x39 < argv[1][i] ){ j=1; }
-		i++;
+	// argc==1 : assume from filename
+	// other   : check&get from argv[1]
+	if( argc == 1 ){
+		assume_comport(COMPORT_NAME , COMMAND_NAME);	// COMPORT assume mode
+	}else{
+		j=0;i=3;
+		if( argv[1][3] == '\0' ){ j=1; }
+		while( '\0' != argv[1][i] ){
+			if( 0x30 > argv[1][i] || 0x39 < argv[1][i] ){ j=1; }
+			i++;
+		}
+		if( argv[1][0] != 'C' ||
+		    argv[1][1] != 'O' ||
+		    argv[1][2] != 'M' ||
+		    j          !=  0     ){
+			printf("Error:\tinvalid args <COMPORT>=%s\n",argv[1]);
+			print_usage(COMMAND_NAME);
+			exit(1);
+		}
+		strncpy(COMPORT_NAME,argv[1],LEN_MID-1);
 	}
-	if( argv[1][0] != 'C' ||
-	    argv[1][1] != 'O' ||
-	    argv[1][2] != 'M' ||
-	    j          !=  0     ){
-		printf("Error: invalid args <COMPORT>=%s\n",argv[1]);
-		print_usage(COMMAND_NAME);
-		exit(1);
-	}
-	strncpy(COMPORT_NAME,argv[1],LEN_MID-1);
-	
 	
 	
 	/* check arg format BAUDRATE */
-	if( argc == 2 ){
+	// argc==1 : default BAUDRATE
+	// argc==2 : default BAUDRATE
+	// too long argv[2].len : default BAUDRATE
+	// other   : check&get from argv[2]
+	if( argc == 2 || argc == 1 ){
 		*COMPORT_BAUD=TARGET_BAUDRATE;	// default BAUDRATE
 	}else if( strlen(argv[2]) > 8){
 		*COMPORT_BAUD=TARGET_BAUDRATE;	// default BAUDRATE
-		printf("Warning:\tbaurate ignored, using %d\n",TARGET_BAUDRATE);
+		printf("Warning:\tbaudrate ignored, using %d\n",TARGET_BAUDRATE);
 	}else{
 		j=0;i=0;
 		while( '\0' != argv[2][i] ){
 			if( 0x30 > argv[2][i] || 0x39 < argv[2][i] ){ j=1; }
 			i++;
 		}
-		if( j          !=  0     ){
-			printf("Error: invalid args <BAUDRATE>=%s\n",argv[2]);
+		if( j != 0 ){
+			printf("Error:\tinvalid args <BAUDRATE>=%s\n",argv[2]);
 			print_usage(COMMAND_NAME);
 			exit(1);
 		}
 		*COMPORT_BAUD=atol(argv[2]);	// custom BAUDRATE
 	}
+
+}
+
+void assume_comport(char *COMPORT_NAME, char *COMMAND_NAME){
+	unsigned int i=0;
+	unsigned int j=0;
+	
+	/* check filename length */
+	if( strlen(COMMAND_NAME) <= 8 ){ // filename too short
+		printf("Error:\tCan't assume <COMPORT> from \"%s\" (maybe too short)\n",COMMAND_NAME);
+		print_usage(COMMAND_NAME);
+		exit(1);
+	}
+	
+	/* search COMPORT from filename */
+	j=0;i=0;
+	while( '\0' != COMMAND_NAME[i+4] ){				// filename check loop
+		if( COMMAND_NAME[i+0] == 'C'  &&
+		    COMMAND_NAME[i+1] == 'O'  &&
+		    COMMAND_NAME[i+2] == 'M'  &&
+		    0x30 <= COMMAND_NAME[i+3] &&
+		    0x39 >= COMMAND_NAME[i+3]     ){
+			COMPORT_NAME[0]=COMMAND_NAME[i+0];		// copy to COMPORT_NAME
+			COMPORT_NAME[1]=COMMAND_NAME[i+1];		// copy to COMPORT_NAME
+			COMPORT_NAME[2]=COMMAND_NAME[i+2];		// copy to COMPORT_NAME
+			COMPORT_NAME[3]=COMMAND_NAME[i+3];		// copy to COMPORT_NAME
+			j=4;
+			while ( 0x30 <= COMMAND_NAME[i+j] &&
+			        0x39 >= COMMAND_NAME[i+j] &&
+			        LEN_MID-3-1 > j               ){
+				COMPORT_NAME[j]=COMMAND_NAME[i+j];	// copy to COMPORT_NAME
+				j++;
+			}
+			COMPORT_NAME[j]='\0';
+			break;
+		}
+		i++;
+	}												// filename check loop end
+	
+	/* check result */
+	if ( j == 0 ){									// error: not found from filename
+		printf("Error:\tCan't assume <COMPORT> from \"%s\"\n",COMMAND_NAME);
+		print_usage(COMMAND_NAME);
+		exit(1);
+	}
+
 }
 
 
 void print_usage(char* COMMAND_NAME){
 	printf("\n");
-	printf("Usage: %s <COMPORT> [BAUDRATE]\n",COMMAND_NAME);
-	printf("  ex.: %s COM3\n",COMMAND_NAME);
-	printf("  ex.: %s COM3      80001\n",COMMAND_NAME);
+	printf("Usage:\n");
+	printf("  %s <COMPORT> [BAUDRATE]\n",COMMAND_NAME);
+	printf("  <COMPORT> can specify in filename (COMPORT assume mode)\n");
+	printf("\n");
+	printf("Example:\n");
+	printf("  %s   COM3    80000  (full specified)\n",COMMAND_NAME);
+	printf("  %s   COM3           (use default BAUDRATE)\n",COMMAND_NAME);
+	printf("  fakeJJY_COM3.exe             (COMPORT assume mode)\n");
 }
 
 
@@ -382,7 +447,7 @@ void send_1ms(){
 
 	/* Write 0x55 */
 	if( 0 == WriteFile(COMPORT_h , OUTPUTVALUE , sizeof(OUTPUTVALUE)/sizeof(unsigned char) , &discard_var , NULL) ) {
-		printf("\nError: Write Failed\n");
+		printf("\nError:\tWrite Failed\n");
 		CloseHandle(COMPORT_h);
 		exit(1);
 	}
@@ -407,7 +472,7 @@ HANDLE open_comport(unsigned char* COMPORT_NAME ,unsigned long COMPORT_BAUD){
 		0,
 		0 ); 
 	if ( h == INVALID_HANDLE_VALUE ) {
-		printf("\nError: Open serial port : %s\n",COMPORT_NAME);
+		printf("\nError:\tFailed open serial port : %s\n",COMPORT_NAME);
 		exit(1);
 	}
 	printf("done\n");
@@ -434,7 +499,7 @@ HANDLE open_comport(unsigned char* COMPORT_NAME ,unsigned long COMPORT_BAUD){
 	dcb.fRtsControl			= RTS_CONTROL_DISABLE;
 	dcb.fAbortOnError		= FALSE;
 	if( 0 == SetCommState(h , &dcb) ){
-		printf("\nError: Setting serial port : %s %dN81\n",COMPORT_NAME,COMPORT_BAUD);
+		printf("\nError:\tFailed setting serial port : %s %dN81\n",COMPORT_NAME,COMPORT_BAUD);
 		CloseHandle(h);
 		exit(1);
 	}
