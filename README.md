@@ -61,7 +61,7 @@ TIMECODE:       M10000101M001000011M001001001M000100110M000011001M101000000M
 Sending:        M10000101M001000
 ```
 ## Usage - Test mode with [t|T] char at after [BAUDRATE]
-+ t or T charactor put the after [BAUDRATE]
++ put t or T charactor after [BAUDRATE]
 + you can see/check/calibrate 40kHz carrier wave in 800ms, if you have oscilloscope.
 ```
 $ fakeJJY.exe COM3 80000t
