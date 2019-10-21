@@ -9,6 +9,9 @@
 #define LEN_MID   64
 #define LEN_SHORT 32
 #define TARGET_BAUDRATE 80000
+#define MODE_UNDEF  0
+#define MODE_NORMAL 1
+#define MODE_TEST   2
 
 
 /* subroutines */
@@ -29,6 +32,7 @@ void	send_TIMECODE(char*);
 
 /* vars */
 HANDLE	COMPORT_h;
+unsigned char MODE = MODE_NORMAL;
 
 
 
@@ -39,7 +43,6 @@ int main( int argc, char *argv[] ){
 	unsigned char TIMECODE_str[LEN_MID] = { '\0' };
 	unsigned char TIME_str[LEN_SHORT]   = { '\0' };
 	
-	
 	/* setting interrupt */
 	signal(SIGINT, abort_handler);
 	
@@ -47,6 +50,16 @@ int main( int argc, char *argv[] ){
 	/* check arg & get COMMAND_NAME,COMPORT_NAME,COMPORT_BAUD */
 	check_args( argc , argv , COMMAND_NAME , COMPORT_NAME , &COMPORT_BAUD);
 	
+	/* check TESTMODE */
+	if( MODE == MODE_TEST ){
+		printf("Warning:\tTestmode enabled\n");
+		COMPORT_h = open_comport(COMPORT_NAME,COMPORT_BAUD);
+		printf("TESTING:\tsend_800ms\t");
+		send_800ms();
+		printf("done\n");
+		CloseHandle(COMPORT_h);
+		return(0);
+	}
 	
 	/* open COM port & setting */
 	COMPORT_h = open_comport(COMPORT_NAME,COMPORT_BAUD);
@@ -340,12 +353,18 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 	// other   : check&get from argv[2]
 	if( argc == 2 || argc == 1 ){
 		*COMPORT_BAUD=TARGET_BAUDRATE;	// default BAUDRATE
-	}else if( strlen(argv[2]) > 8){
+	}else if( strlen(argv[2]) > 9){
 		*COMPORT_BAUD=TARGET_BAUDRATE;	// default BAUDRATE
 		printf("Warning:\tbaudrate ignored, using %d\n",TARGET_BAUDRATE);
 	}else{
 		j=0;i=0;
 		while( '\0' != argv[2][i] ){
+			if( i >= 1             &&
+			    ( 'T'  == argv[2][i] || 't'  == argv[2][i] ) ){
+				MODE=MODE_TEST;
+				argv[2][i]='\0';
+				break;
+			}
 			if( 0x30 > argv[2][i] || 0x39 < argv[2][i] ){ j=1; }
 			i++;
 		}
