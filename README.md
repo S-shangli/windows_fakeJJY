@@ -18,7 +18,7 @@ fake JJY generator via Serial Port
 $ gcc ./main.c -o fakeJJY
 ```
  
-## Usage
+## Usage - Error message in without any argument
 ```
 $ ./fakeJJY.exe
 Error:  Can't assume <COMPORT> from "fakeJJY.exe"
@@ -32,7 +32,9 @@ Example:
   fakeJJY.exe   COM3           (use default BAUDRATE)
   fakeJJY_COM3.exe             (COMPORT assume mode)
 ```
- 
+
+## Usage - Default Baudrate mode with COMPORT argument
++ Default Baudrate is 80000 (40kHz carrier wave)
 ```
 $ ./fakeJJY.exe  COM3
 Opening:        COM3            done
@@ -45,7 +47,9 @@ TIMECODE:       M10001000M000101001M001001000M100100100M000011001M011000000M
 Sending:        M10001000M000101001M001001000M100100100M000011001M011000000M
 Waiting:        clock 00sec     done(19h49m00s)
 ```
-
+## Usage - COMPORT assume mode and Default Baudrate mode in without any argument
++ COMn (n=0..) keyword in file name
++ for easy to use
 ```
 $ cp fakeJJY.exe fakeJJY_COM3.exe
 
@@ -55,6 +59,16 @@ Setting:        80000N81        done
 Waiting:        clock 00sec     done(23h45m00s)
 TIMECODE:       M10000101M001000011M001001001M000100110M000011001M101000000M
 Sending:        M10000101M001000
+```
+## Usage - Test mode with [t|T] char at after [BAUDRATE]
++ t or T charactor put the after [BAUDRATE]
++ you can see/check/calibrate 40kHz carrier wave in 800ms, if you have oscilloscope.
+```
+$ fakeJJY.exe COM3 80000t
+Warning:        Testmode enabled
+Opening:        COM3            done
+Setting:        80000N81        done
+TESTING:        send_800ms      done
 ```
 
 ## External Connection
