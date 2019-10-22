@@ -32,6 +32,27 @@ Example:
   fakeJJY.exe   COM3           (use default BAUDRATE)
   fakeJJY_COM3.exe             (COMPORT assume mode)
 ```
+## Usage
+```
+$ ./fakeJJY.exe COM3 80000
+Opening:        COM3            done
+Setting:        80000N81        done
+Waiting:        clock 00sec     done(10h25m00s)
+TIMECODE:       M01000101M000100000M001001001M010100110M000011001M010000000M
+Sending:        M01000101M000100000M001001001M010100110M000011001M010000000M
+```
+
+## Usage - 60kHz mode
++ into 60kHz mode if you specified over 10000 BAUDRATE
+```
+$ ./fakeJJY.exe COM3 120000
+Warning:        60kHz mode enabled
+Opening:        COM3            done
+Setting:        120000N81       done
+Waiting:        clock 00sec     done(10h14m00s)
+TIMECODE:       M00100100M000100000M001001001M010100100M000011001M010000000M
+Sending:        M00100100M000100000M001001001M010100100M000011001M010000000M
+```
 
 ## Usage - Default Baudrate mode with COMPORT argument
 + Default Baudrate is 80000 (40kHz carrier wave)
