@@ -3,15 +3,15 @@
 #include <signal.h>
 #include <time.h>
 
-
 /* defines */
 #define LEN_LONG  256
 #define LEN_MID   64
 #define LEN_SHORT 32
 #define TARGET_BAUDRATE 80000
-#define MODE_UNDEF  0
-#define MODE_NORMAL 1
-#define MODE_TEST   2
+#define MODE_UNDEF     0
+#define MODE_NORMAL40K 1
+#define MODE_NORMAL60K 2
+#define MODE_TEST      4
 
 
 /* subroutines */
@@ -32,7 +32,7 @@ void	send_TIMECODE(char*);
 
 /* vars */
 HANDLE	COMPORT_h;
-unsigned char MODE = MODE_NORMAL;
+unsigned char MODE = MODE_UNDEF;
 
 
 
@@ -50,9 +50,14 @@ int main( int argc, char *argv[] ){
 	/* check arg & get COMMAND_NAME,COMPORT_NAME,COMPORT_BAUD */
 	check_args( argc , argv , COMMAND_NAME , COMPORT_NAME , &COMPORT_BAUD);
 	
-	/* check TESTMODE */
-	if( MODE == MODE_TEST ){
-		printf("Warning:\tTestmode enabled\n");
+	/* check 60kHz mode */
+	if ( 0 != (MODE & MODE_NORMAL60K)  ){
+		printf("Warning:\t60kHz mode enabled\n");
+	}
+	
+	/* check Test mode */
+	if( 0 != (MODE & MODE_TEST) ){
+		printf("Warning:\tTest mode enabled\n");
 		COMPORT_h = open_comport(COMPORT_NAME,COMPORT_BAUD);
 		printf("TESTING:\tsend_800ms\t");
 		send_800ms();
@@ -361,7 +366,7 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 		while( '\0' != argv[2][i] ){
 			if( i >= 1             &&
 			    ( 'T'  == argv[2][i] || 't'  == argv[2][i] ) ){
-				MODE=MODE_TEST;
+				MODE |= MODE_TEST;
 				argv[2][i]='\0';
 				break;
 			}
@@ -374,6 +379,11 @@ void check_args(int argc, char *argv[], char *COMMAND_NAME , char *COMPORT_NAME,
 			exit(1);
 		}
 		*COMPORT_BAUD=atol(argv[2]);	// custom BAUDRATE
+	}
+	if ( *COMPORT_BAUD <= (unsigned long)100000 ){
+		MODE |= MODE_NORMAL40K;
+	}else{
+		MODE |= MODE_NORMAL60K;
 	}
 
 }
@@ -427,13 +437,15 @@ void assume_comport(char *COMPORT_NAME, char *COMMAND_NAME){
 void print_usage(char* COMMAND_NAME){
 	printf("\n");
 	printf("Usage:\n");
-	printf("  %s <COMPORT> [BAUDRATE]\n",COMMAND_NAME);
+	printf("  %s <COMPORT> [BAUDRATE[t|T]]\n",COMMAND_NAME);
 	printf("  <COMPORT> can specify in filename (COMPORT assume mode)\n");
 	printf("\n");
 	printf("Example:\n");
 	printf("  %s   COM3    80000  (full specified)\n",COMMAND_NAME);
 	printf("  %s   COM3           (use default BAUDRATE)\n",COMMAND_NAME);
 	printf("  fakeJJY_COM3.exe             (COMPORT assume mode)\n");
+	printf("  %s   COM3    80000t (Test mode)\n",COMMAND_NAME);
+	printf("  %s   COM3   120000  (60kHz mode)\n",COMMAND_NAME);
 }
 
 
@@ -461,11 +473,23 @@ void send_800ms(){
 
 
 void send_1ms(){
-	unsigned char OUTPUTVALUE[] = { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+	unsigned char VALUE40KHZMODE[] = { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+	unsigned char VALUE60KHZMODE[] = { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55 };
+	unsigned char *OUTPUTVALUE;
 	DWORD discard_var; // discard
+	DWORD len;
+
+	/* check 40kHz or 60kHz mode */
+	if ( 0 != ( MODE & MODE_NORMAL40K) ){
+		OUTPUTVALUE=VALUE40KHZMODE;
+		len=sizeof( VALUE40KHZMODE)/sizeof(unsigned char);
+	}else{
+		OUTPUTVALUE=VALUE60KHZMODE;
+		len=sizeof( VALUE60KHZMODE)/sizeof(unsigned char);
+	}
 
 	/* Write 0x55 */
-	if( 0 == WriteFile(COMPORT_h , OUTPUTVALUE , sizeof(OUTPUTVALUE)/sizeof(unsigned char) , &discard_var , NULL) ) {
+	if( 0 == WriteFile(COMPORT_h , OUTPUTVALUE , len , &discard_var , NULL) ) {
 		printf("\nError:\tWrite Failed\n");
 		CloseHandle(COMPORT_h);
 		exit(1);
